@@ -242,7 +242,7 @@ void display_board(const board &brd)
 boards piece_moves(board brd, int index, const moves &moves)
 {
 	auto yield = boards{};
-	yield.reserve(40);
+	yield.reserve(32);
 	auto piece = brd[index];
 	auto ptype = piece_type[piece];
 	auto promote = std::string("qrbn");
@@ -468,7 +468,7 @@ int score(const board &brd, int colour, int alpha, int beta, int ply)
 	for (auto &new_board : all_moves(brd, colour))
 	{
 		int value;
-		if (mate == false)
+		if (!mate)
 		{
 			//not first child so null search window
 			value = -score(new_board, -colour, -alpha-1, -alpha, ply-1);
@@ -545,7 +545,7 @@ board best_move(const board &brd, int colour, const boards &history)
 	for (auto ply = 1; ply <= max_ply; ++ply)
  	{
 		//iterative deepening of ply so we allways have a best move to go with if the timer expires
-		std::cout << std::endl << "Ply = " << ply << "\n";
+		std::cout << "\nPly = " << ply << "\n";
 		auto best_index = 0;
 		auto alpha = -mate_value*10;
 		auto beta = mate_value*10;
@@ -613,7 +613,9 @@ int main(int argc, const char * argv[])
 		if (colour == white)
 		{
 			std::cout << "\nWhite to move:\n";
-		} else {
+		}
+		else
+		{
 			std::cout << "\nBlack to move:\n";
 		}
 		auto new_brd = best_move(brd, colour, history);
@@ -623,7 +625,9 @@ int main(int argc, const char * argv[])
 			if (in_check(brd, colour, king_index))
 			{
 				std::cout << "\n** Checkmate **\n";
-			} else {
+			}
+			else
+			{
 				std::cout << "\n** Stalemate **\n";
 			}
 			break;
