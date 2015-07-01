@@ -7,9 +7,9 @@
 #include <chrono>
 
 //control paramaters
-const int max_chess_moves		= 218;
-const int max_ply				= 10;
-const float max_time_per_move	= 10;
+const int max_chess_moves     = 218;
+const int max_ply             = 10;
+const float max_time_per_move = 10;
 
 //piece values, in centipawns
 const int king_value   = 20000;
