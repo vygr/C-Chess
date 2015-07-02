@@ -102,9 +102,8 @@ auto king_moves = moves{ \
 
 //map piece to its movement possibilities
 auto moves_map = std::map<char, moves &>{ \
-	{'p', black_pawn_moves}, {'P', white_pawn_moves}, {'R', rook_moves}, {'r', rook_moves}, \
-	{'B', bishop_moves}, {'b', bishop_moves}, {'N', knight_moves}, {'n', knight_moves}, \
-	{'Q', queen_moves}, {'q', queen_moves}, {'K', king_moves}, {'k', king_moves}};
+	{'p', black_pawn_moves}, {'P', white_pawn_moves}, {'R', rook_moves}, {'r', rook_moves}, {'B', bishop_moves}, {'b', bishop_moves}, \
+	{'N', knight_moves}, {'n', knight_moves}, {'Q', queen_moves}, {'q', queen_moves}, {'K', king_moves}, {'k', king_moves}};
 
 //piece check vectors, king is tested for being on these vectors for check tests
 auto black_pawn_vectors = vectors{ \
@@ -124,11 +123,9 @@ auto king_vectors = vectors{ \
 
 //check tests, piece types given can not be on the vectors given
 auto white_tests = tests{ \
-	{"qb", &bishop_vectors}, {"qr", &rook_vectors}, {"n", &knight_vectors}, \
-	{"k", &king_vectors}, {"p", &white_pawn_vectors}};
+	{"qb", &bishop_vectors}, {"qr", &rook_vectors}, {"n", &knight_vectors}, {"k", &king_vectors}, {"p", &white_pawn_vectors}};
 auto black_tests = tests{ \
-	{"QB", &bishop_vectors}, {"QR", &rook_vectors}, {"N", &knight_vectors}, \
-	{"K", &king_vectors}, {"P", &black_pawn_vectors}};
+	{"QB", &bishop_vectors}, {"QR", &rook_vectors}, {"N", &knight_vectors}, {"K", &king_vectors}, {"P", &black_pawn_vectors}};
 
 //map piece to black/white scores for board evaluation
 auto piece_values = std::map<char, std::pair<int, int>>{ \
@@ -204,12 +201,9 @@ auto king_position_values = std::array<int, 64>{ \
 
 //map piece to position value table
 auto piece_positions = std::map<char, std::array<int, 64>&>{ \
-	{'k', king_position_values}, {'K', king_position_values}, \
-	{'q', queen_position_values}, {'Q', queen_position_values}, \
-	{'r', rook_position_values}, {'R', rook_position_values}, \
-	{'b', bishop_position_values}, {'B', bishop_position_values}, \
-	{'n', knight_position_values}, {'N', knight_position_values}, \
-	{'p', pawn_position_values}, {'P', pawn_position_values}};
+	{'k', king_position_values}, {'K', king_position_values}, {'q', queen_position_values}, {'Q', queen_position_values}, \
+	{'r', rook_position_values}, {'R', rook_position_values}, {'b', bishop_position_values}, {'B', bishop_position_values}, \
+	{'n', knight_position_values}, {'N', knight_position_values}, {'p', pawn_position_values}, {'P', pawn_position_values}};
 
 //clear screen
 void cls()
@@ -455,6 +449,7 @@ int evaluate(const board &brd, int colour)
 	return (white_score - black_score) * colour;
 }
 
+//start of move time
 auto start_time = std::chrono::high_resolution_clock::now();
 
 //pvs alpha/beta pruning minmax search for given ply
@@ -642,9 +637,9 @@ int main(int argc, const char * argv[])
 		for (auto i = 0; i < 3; ++i)
 		{
 			display_board(brd);
-			std::this_thread::sleep_for(std::chrono::nanoseconds(100000000));
+			std::this_thread::sleep_for(std::chrono::duration<float>(0.1));
 			display_board(new_brd);
-			std::this_thread::sleep_for(std::chrono::nanoseconds(100000000));
+			std::this_thread::sleep_for(std::chrono::duration<float>(0.1));
 		}
 		colour = -colour;
 		brd = new_brd;
