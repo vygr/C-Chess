@@ -8,8 +8,8 @@
 
 //control paramaters
 const int max_chess_moves     = 218;
-const int max_ply             = 10;
-const float max_time_per_move = 10;
+const int max_ply             = 6;
+const float max_time_per_move = 10000;
 
 //piece values, in centipawns
 const int king_value   = 20000;
@@ -453,57 +453,67 @@ int evaluate(const board &brd, int colour)
 auto start_time = std::chrono::high_resolution_clock::now();
 
 //pvs alpha/beta pruning minmax search for given ply
-int score(const board &brd, int colour, int alpha, int beta, int ply)
+int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
-	if (ply == 0)
- 	{
-		return evaluate(brd, colour);
+	if (ply == 0) return -sbrd.score;
+	auto next_boards = score_boards{};
+	next_boards.reserve(max_chess_moves);
+	for (auto &brd : all_moves(sbrd.brd, colour))
+	{
+		next_boards.push_back(score_board{evaluate(brd, colour), 0, brd});
 	}
 	auto mate = true;
-	for (auto &new_board : all_moves(brd, colour))
+	if (next_boards.size() != 0)
 	{
-		int value;
-		if (!mate)
+		std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
 		{
-			//not first child so null search window
-			value = -score(new_board, -colour, -alpha-1, -alpha, ply-1);
-			if (alpha < value && value < beta)
+			return brd1.score > brd2.score;
+		});
+		for (auto &score_board : next_boards)
+		{
+			int value;
+			if (!mate)
 			{
-				//failed high, so full re-search
-				value = -score(new_board, -colour, -beta, -alpha, ply-1);
+				//not first child so null search window
+				value = -score(score_board, -colour, -alpha-1, -alpha, ply-1);
+				if (alpha < value && value < beta)
+				{
+					//failed high, so full re-search
+					value = -score(score_board, -colour, -beta, -alpha, ply-1);
+				}
 			}
-		}
-		else
-		{
-			value = -score(new_board, -colour, -beta, -alpha, ply-1);
-		}
-		mate = false;
-		if (value >= mate_value)
-		{
-			//early return if mate
-			return value;
-		}
-		if (value >= beta)
-		{
-			//fail hard beta cutoff
-			return beta;
-		}
-		if (value > alpha)
-		{
-			alpha = value;
-		}
-		auto end_time = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<float> elapsed = end_time - start_time;
-		if (elapsed.count() >= max_time_per_move)
-		{
-			//time has expired for this move
-			break;
+			else
+			{
+				value = -score(score_board, -colour, -beta, -alpha, ply-1);
+			}
+			mate = false;
+			if (value >= mate_value)
+			{
+				//early return if mate
+				return value;
+			}
+			if (value >= beta)
+			{
+				//fail hard beta cutoff
+				return beta;
+			}
+			if (value > alpha)
+			{
+				alpha = value;
+			}
+			auto end_time = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float> elapsed = end_time - start_time;
+			if (elapsed.count() >= max_time_per_move)
+			{
+				//time has expired for this move
+				break;
+			}
 		}
 	}
 	if (mate)
  	{
 		std::size_t king_index = 0;
-		if (in_check(brd, colour, king_index))
+		if (in_check(sbrd.brd, colour, king_index))
 		{
 			//check mate
 			return -mate_value - ply;
@@ -546,13 +556,13 @@ board best_move(const board &brd, int colour, const boards &history)
 		auto beta = mate_value*10;
 		for (auto index = 0; index < next_boards.size(); ++index)
 		{
-			auto score_board = next_boards[index];
-			score_board.score = -score(score_board.brd, -colour, -beta, -alpha, ply) + score_board.bias;
-			if (score_board.score > alpha)
+			auto score_board = &next_boards[index];
+			score_board->score = -score(*score_board, -colour, -beta, -alpha, ply);
+			if (score_board->score > alpha)
 			{
 				//got a better board than last best
+				alpha = score_board->score;
 				best_index = index;
-				alpha = score_board.score;
 				std::cout << "*" << std::flush;
 			}
 			else
