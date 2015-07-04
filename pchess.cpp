@@ -10,8 +10,8 @@
 #include <future>
 
 //control paramaters
-const int max_ply             = 6;
-const float max_time_per_move = 100;
+const int max_ply             = 10;
+const float max_time_per_move = 10;
 const int max_chess_moves     = 218 / 2;
 const int max_score_entries   = 100000;
 
@@ -616,7 +616,7 @@ board best_move(const board &brd, int colour, const boards &history)
 		{
 			return brd1.score > brd2.score;
 		});
-		if (best_score >= mate_value)
+		if (best_score >= mate_value || best_score <= -mate_value)
 		{
 			//don't look further ahead if we allready can force mate
 			break;
@@ -637,6 +637,7 @@ int main(int argc, const char * argv[])
 	//auto brd = board("        p         k    p   r          p      r              K   ");
 	//auto brd = board("                   k               K         Q                  ");
 	//auto brd = board("    k     R                               K                      ");
+	//auto brd = board("   k              KBB                                            ");
 	auto history = boards{};
 	auto colour = white;
 	display_board(brd);

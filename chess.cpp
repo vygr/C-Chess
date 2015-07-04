@@ -9,8 +9,8 @@
 #include <chrono>
 
 //control paramaters
-const int max_ply             = 6;
-const float max_time_per_move = 100;
+const int max_ply             = 10;
+const float max_time_per_move = 10;
 const int max_chess_moves     = 218 / 2;
 const int max_score_entries   = 100000;
 
@@ -563,6 +563,10 @@ board best_move(const board &brd, int colour, const boards &history)
 	{
 		return std::string("");
 	}
+	if (next_boards.size() == 1)
+	{
+		return next_boards[0].brd;
+	}
 	std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
 	{
 		return brd1.score > brd2.score;
@@ -573,7 +577,7 @@ board best_move(const board &brd, int colour, const boards &history)
 	for (auto ply = 1; ply <= max_ply; ++ply)
  	{
 		//iterative deepening of ply so we allways have a best move to go with if the timer expires
-		std::cout << "\nPly = " << ply << " ";
+		std::cout << "\nPly = " << ply << " " << std::flush;
 		auto best_index = 0;
 		auto alpha = -mate_value*10;
 		auto beta = mate_value*10;
@@ -609,7 +613,7 @@ board best_move(const board &brd, int colour, const boards &history)
 			next_boards.erase(begin(next_boards) + best_index);
 			next_boards.insert(begin(next_boards), score_board);
 		}
-		if (alpha >= mate_value)
+		if (alpha >= mate_value || alpha <= -mate_value)
 		{
 			//don't look further ahead if we allready can force mate
 			break;
@@ -630,6 +634,7 @@ int main(int argc, const char * argv[])
 	//auto brd = board("        p         k    p   r          p      r              K   ");
 	//auto brd = board("                   k               K         Q                  ");
 	//auto brd = board("    k     R                               K                      ");
+	//auto brd = board("   k              KBB                                            ");
 	auto history = boards{};
 	auto colour = white;
 	display_board(brd);
