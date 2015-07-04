@@ -466,10 +466,13 @@ int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 	auto mate = true;
 	if (next_boards.size() != 0)
 	{
-		std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
+		if (ply > 1)
 		{
-			return brd1.score > brd2.score;
-		});
+			std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
+			{
+				return brd1.score > brd2.score;
+			});
+		}
 		for (auto &score_board : next_boards)
 		{
 			int value;
@@ -561,6 +564,7 @@ board best_move(const board &brd, int colour, const boards &history)
 		{
 			auto score_board = &next_boards[index];
 			score_board->score = -futures[index].get();
+			score_board->score += score_board->bias;
 			if (score_board->score > best_score)
 			{
 				//got a better board than last best
@@ -613,14 +617,14 @@ int main(int argc, const char * argv[])
 	{
 		auto end_time = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed = end_time - game_start_time;
-		std::cout << "Elapsed Time: " << elapsed.count() << "\n";
+		std::cout << "\nElapsed Time: " << elapsed.count() << "\n";
 		if (colour == white)
 		{
-			std::cout << "\nWhite to move:\n";
+			std::cout << "White to move:\n";
 		}
 		else
 		{
-			std::cout << "\nBlack to move:\n";
+			std::cout << "Black to move:\n";
 		}
 		auto new_brd = best_move(brd, colour, history);
 		if (new_brd == "")

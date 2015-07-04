@@ -2,13 +2,16 @@
 #include <array>
 #include <vector>
 #include <map>
+#include <list>
+#include <unordered_map>
 #include <algorithm>
 #include <thread>
 #include <chrono>
 
 //control paramaters
-const int max_chess_moves     = 218;
+const int max_chess_moves     = 218 / 2;
 const int max_ply             = 6;
+const int max_score_entries   = 100000;
 const float max_time_per_move = 10000;
 
 //piece values, in centipawns
@@ -393,7 +396,7 @@ bool in_check(const board &brd, int colour, std::size_t &king_index)
 	//not in check
 	return false;
 }
-	
+
 //generate all moves (boards) for the given colours turn filtering out position where king is in check
 boards all_moves(const board &brd, int colour)
 {
@@ -452,8 +455,31 @@ int evaluate(const board &brd, int colour)
 //start of move time
 auto start_time = std::chrono::high_resolution_clock::now();
 
-//pvs alpha/beta pruning minmax search for given ply
+//memoized scores
+int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply);
+auto trans_table = std::unordered_map<std::string, int>{};
+auto trans_list = std::list<std::string>{};
+
 int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
+{
+	if (ply < 2) return score_impl(sbrd, colour, alpha, beta, ply);
+	auto key = std::string(sbrd.brd) + ":" + std::to_string(colour) + ":" \
+		+ std::to_string(ply) + ":" + std::to_string(alpha) + ":" + std::to_string(beta);
+	auto search = trans_table.find(key);
+	if (search != end(trans_table)) return search->second;
+	auto score = score_impl(sbrd, colour, alpha, beta, ply);
+	trans_table[key] = score;
+	trans_list.push_back(key);
+	if (trans_list.size() > max_score_entries)
+	{
+		trans_table.erase(trans_list.front());
+		trans_list.pop_front();
+	}
+	return score;
+}
+
+//pvs alpha/beta pruning minmax search for given ply
+int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
 	if (ply == 0) return -sbrd.score;
 	auto next_boards = score_boards{};
@@ -465,10 +491,13 @@ int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 	auto mate = true;
 	if (next_boards.size() != 0)
 	{
-		std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
+		if (ply > 1)
 		{
-			return brd1.score > brd2.score;
-		});
+			std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
+			{
+				return brd1.score > brd2.score;
+			});
+		}
 		for (auto &score_board : next_boards)
 		{
 			int value;
@@ -558,6 +587,7 @@ board best_move(const board &brd, int colour, const boards &history)
 		{
 			auto score_board = &next_boards[index];
 			score_board->score = -score(*score_board, -colour, -beta, -alpha, ply);
+			score_board->score += score_board->bias;
 			if (score_board->score > alpha)
 			{
 				//got a better board than last best
@@ -614,14 +644,14 @@ int main(int argc, const char * argv[])
 	{
 		auto end_time = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed = end_time - game_start_time;
-		std::cout << "Elapsed Time: " << elapsed.count() << "\n";
+		std::cout << "\nElapsed Time: " << elapsed.count() << "\n";
 		if (colour == white)
 		{
-			std::cout << "\nWhite to move:\n";
+			std::cout << "White to move:\n";
 		}
 		else
 		{
-			std::cout << "\nBlack to move:\n";
+			std::cout << "Black to move:\n";
 		}
 		auto new_brd = best_move(brd, colour, history);
 		if (new_brd == "")
