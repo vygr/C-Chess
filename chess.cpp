@@ -9,8 +9,8 @@
 #include <chrono>
 
 //control paramaters
-const int max_ply             = 20;
-const float max_time_per_move = 10;
+const int max_ply             = 6;
+const float max_time_per_move = 100;
 const int max_chess_moves     = 218 / 2;
 const int max_score_entries   = 100000;
 
@@ -238,8 +238,7 @@ void display_board(const board &brd)
 //generate all boards for a piece index and moves possibility
 boards piece_moves(board brd, int index, const moves &moves)
 {
-	auto yield = boards{};
-	yield.reserve(32);
+	auto yield = boards{}; yield.reserve(24);
 	auto piece = brd[index];
 	auto ptype = piece_type[piece];
 	auto promote = std::string("qrbn");
@@ -335,7 +334,7 @@ boards piece_moves(board brd, int index, const moves &moves)
 //generate all first hit pieces from index position along given vectors
 std::string piece_scans(const board &brd, unsigned int index, const vectors &vectors)
 {
-	auto yield = std::string{};
+	auto yield = std::string{}; yield.reserve(8);
 	auto cx = index % 8;
 	auto cy = index / 8;
 	for (auto &vector : vectors)
@@ -384,14 +383,8 @@ bool in_check(const board &brd, int colour, std::size_t &king_index)
 	}
 	for (auto &test : tests)
  	{
-		for (auto &piece : piece_scans(brd, static_cast<int>(king_index), *test.vectors))
-		{
-			if (test.pieces.find(piece) != std::string::npos)
-			{
-				//yes we found one of the pieces along a clear vector from king
-				return true;
-			}
-		}
+		if (test.pieces.find_first_of(piece_scans(brd, static_cast<int>(king_index), *test.vectors)) \
+			!= std::string::npos) return true;
 	}
 	//not in check
 	return false;
@@ -400,23 +393,23 @@ bool in_check(const board &brd, int colour, std::size_t &king_index)
 //generate all moves (boards) for the given colours turn filtering out position where king is in check
 boards all_moves(const board &brd, int colour)
 {
-	auto yield = boards{};
-	yield.reserve(max_chess_moves);
 	//enumarate the board square by square
+	auto yield = boards{}; yield.reserve(max_chess_moves);
 	std::size_t king_index = 0;
-	for (auto index = 0; index < brd.length(); ++index)
+	auto is_black = (colour == black);
+	int len = int(brd.length());
+	for (int index = 0; index < len; ++index)
 	{
 		auto piece = brd[index];
- 		if (piece_type[piece] == colour)
+		if (piece == ' ') continue;
+		if (piece > 'Z' != is_black) continue;
+		//one of our pieces ! so gather all boards from possible moves of this piece
+		for (auto &new_brd : piece_moves(brd, index, moves_map[piece]))
 		{
-			//one of our pieces ! so gather all boards from possible moves of this piece
-			for (auto &new_brd : piece_moves(brd, index, moves_map[piece]))
+			if (!in_check(new_brd, colour, king_index))
 			{
-				if (!in_check(new_brd, colour, king_index))
-				{
-					//on this board king is not in check
-					yield.push_back(new_brd);
-				}
+				//on this board king is not in check
+				yield.push_back(new_brd);
 			}
 		}
 	}
@@ -426,28 +419,26 @@ boards all_moves(const board &brd, int colour)
 //evaluate (score) a board for the colour given
 int evaluate(const board &brd, int colour)
 {
-	auto black_score = 0;
-	auto white_score = 0;
-	for (auto index = 0; index < brd.length(); ++index)
+	int black_score = 0;
+	int white_score = 0;
+	int len = int(brd.length());
+	for (int index = 0; index < len; ++index)
 	{
+		//add score for position on the board, near center, clear lines etc
 		auto piece = brd[index];
-		auto ptype = piece_type[piece];
-		if (ptype != empty)
+		if (piece == ' ') continue;
+		if (piece > 'Z')
 		{
-			//add score for position on the board, near center, clear lines etc
-			if (ptype == black)
-			{
-				black_score += piece_positions[piece][63-index];
-			}
-			else
-			{
-				white_score += piece_positions[piece][index];
-			}
-			//add score for piece type, queen, rook etc
-			auto values = piece_values[piece];
-			black_score += values.first;
-			white_score += values.second;
+			black_score += piece_positions[piece][63-index];
 		}
+		else
+		{
+			white_score += piece_positions[piece][index];
+		}
+		//add score for piece type, queen, rook etc
+		auto values = piece_values[piece];
+		black_score += values.first;
+		white_score += values.second;
 	}
 	return (white_score - black_score) * colour;
 }
