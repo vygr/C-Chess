@@ -1,16 +1,19 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <list>
 #include <map>
+#include <unordered_map>
 #include <algorithm>
 #include <thread>
 #include <chrono>
 #include <future>
 
 //control paramaters
-const int max_chess_moves     = 218;
-const int max_ply             = 6;
-const float max_time_per_move = 10000;
+const int max_ply             = 10;
+const float max_time_per_move = 10;
+const int max_chess_moves     = 218 / 2;
+const int max_score_entries   = 100000;
 
 //piece values, in centipawns
 const int king_value   = 20000;
@@ -453,8 +456,34 @@ int evaluate(const board &brd, int colour)
 //start of move time
 auto start_time = std::chrono::high_resolution_clock::now();
 
-//pvs alpha/beta pruning minmax search for given ply
+//memoized scores
+int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply);
 int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
+{
+	static auto trans_table = std::unordered_map<std::string, int>{};
+	static auto trans_lru = std::list<std::string>{};
+	if (ply < 2) return score_impl(sbrd, colour, alpha, beta, ply);
+	std::string key; key.reserve(90);
+	key += sbrd.brd; key += ":";
+	key += std::to_string(colour); key += ":";
+	key += std::to_string(ply); key += ":";
+	key += std::to_string(alpha); key += ":";
+	key += std::to_string(beta);
+	auto search = trans_table.find(key);
+	if (search != end(trans_table)) return search->second;
+	auto score = score_impl(sbrd, colour, alpha, beta, ply);
+	trans_table[key] = score;
+	trans_lru.push_back(key);
+	if (trans_lru.size() > max_score_entries)
+	{
+		trans_table.erase(trans_lru.front());
+		trans_lru.pop_front();
+	}
+	return score;
+}
+
+//pvs alpha/beta pruning minmax search for given ply
+int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
 	if (ply == 0) return -sbrd.score;
 	auto next_boards = score_boards{};
@@ -528,6 +557,14 @@ int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 	return alpha;
 }
 
+//locked score
+int locked_score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
+{
+	static std::mutex trans_mutex;
+	std::lock_guard<std::mutex> lock(trans_mutex);
+	return score(sbrd, colour, alpha, beta, ply);
+}
+
 //best move for given board position for given colour
 board best_move(const board &brd, int colour, const boards &history)
 {
@@ -550,14 +587,14 @@ board best_move(const board &brd, int colour, const boards &history)
 	for (auto ply = 1; ply <= max_ply; ++ply)
  	{
 		//iterative deepening of ply so we allways have a best move to go with if the timer expires
-		std::cout << "\nPly = " << ply << "\n";
+		std::cout << "\nPly = " << ply << " ";
 		auto futures = std::vector<std::future<int>>{};
 		futures.reserve(next_boards.size());
 		auto alpha = -mate_value*10;
 		auto beta = mate_value*10;
 		for (auto &score_board: next_boards)
 		{
-			futures.push_back(std::async(std::launch::async, score, score_board, -colour, -beta, -alpha, ply));
+			futures.push_back(std::async(std::launch::async, locked_score, score_board, -colour, -beta, -alpha, ply));
 		}
 		auto best_score = -mate_value*10;
 		for (auto index = 0; index < next_boards.size(); ++index)

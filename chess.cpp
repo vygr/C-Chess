@@ -2,17 +2,17 @@
 #include <array>
 #include <vector>
 #include <map>
-#include <list>
 #include <unordered_map>
+#include <list>
 #include <algorithm>
 #include <thread>
 #include <chrono>
 
 //control paramaters
+const int max_ply             = 20;
+const float max_time_per_move = 10;
 const int max_chess_moves     = 218 / 2;
-const int max_ply             = 6;
 const int max_score_entries   = 100000;
-const float max_time_per_move = 10000;
 
 //piece values, in centipawns
 const int king_value   = 20000;
@@ -457,23 +457,26 @@ auto start_time = std::chrono::high_resolution_clock::now();
 
 //memoized scores
 int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply);
-auto trans_table = std::unordered_map<std::string, int>{};
-auto trans_list = std::list<std::string>{};
-
 int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
+	static auto trans_table = std::unordered_map<std::string, int>{};
+	static auto trans_lru = std::list<std::string>{};
 	if (ply < 2) return score_impl(sbrd, colour, alpha, beta, ply);
-	auto key = std::string(sbrd.brd) + ":" + std::to_string(colour) + ":" \
-		+ std::to_string(ply) + ":" + std::to_string(alpha) + ":" + std::to_string(beta);
+	std::string key; key.reserve(90);
+	key += sbrd.brd; key += ":";
+	key += std::to_string(colour); key += ":";
+	key += std::to_string(ply); key += ":";
+	key += std::to_string(alpha); key += ":";
+	key += std::to_string(beta);
 	auto search = trans_table.find(key);
 	if (search != end(trans_table)) return search->second;
 	auto score = score_impl(sbrd, colour, alpha, beta, ply);
 	trans_table[key] = score;
-	trans_list.push_back(key);
-	if (trans_list.size() > max_score_entries)
+	trans_lru.push_back(key);
+	if (trans_lru.size() > max_score_entries)
 	{
-		trans_table.erase(trans_list.front());
-		trans_list.pop_front();
+		trans_table.erase(trans_lru.front());
+		trans_lru.pop_front();
 	}
 	return score;
 }
@@ -579,7 +582,7 @@ board best_move(const board &brd, int colour, const boards &history)
 	for (auto ply = 1; ply <= max_ply; ++ply)
  	{
 		//iterative deepening of ply so we allways have a best move to go with if the timer expires
-		std::cout << "\nPly = " << ply << "\n";
+		std::cout << "\nPly = " << ply << " ";
 		auto best_index = 0;
 		auto alpha = -mate_value*10;
 		auto beta = mate_value*10;
@@ -630,13 +633,12 @@ int main(int argc, const char * argv[])
 	auto game_start_time = std::chrono::high_resolution_clock::now();
 	auto brd = board("rnbqkbnrpppppppp                                PPPPPPPPRNBQKBNR");
 	//auto brd = board("rnb kbnrpppppppp                                PPPPPPPPRNBQKBNR");
-	//auto brd = board("   r   kpB    pp  p  p    r p             PRRP  P P  P P  K     ");
 	//auto brd = board(" k                         Q P     Q P  K                       ");
 	//auto brd = board(" k                           P     Q P  K                       ");
 	//auto brd = board("        p         k    p   rb         p      r              K   ");
 	//auto brd = board("        p         k    p   r          p      r              K   ");
 	//auto brd = board("                   k               K         Q                  ");
-	//auto brd = board("    k     R        K                                            ");
+	//auto brd = board("    k     R                               K                      ");
 	auto history = boards{};
 	auto colour = white;
 	display_board(brd);
