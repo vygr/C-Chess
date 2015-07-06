@@ -209,13 +209,13 @@ auto piece_positions = std::map<char, std::array<int, 64>&>{ \
 	{'n', knight_position_values}, {'N', knight_position_values}, {'p', pawn_position_values}, {'P', pawn_position_values}};
 
 //clear screen
-void cls()
+auto cls()
 {
 	std::cout << "\033[H\033[2J";
 }
 
 //display board converting to unicode chess characters
-void display_board(const board &brd)
+auto display_board(const board &brd)
 {
 	cls();
 	std::cout << "\n  a   b   c   d   e   f   g   h\n";
@@ -236,7 +236,7 @@ void display_board(const board &brd)
 }
 
 //generate all boards for a piece index and moves possibility
-boards piece_moves(board brd, int index, const moves &moves)
+auto piece_moves(board brd, unsigned int index, const moves &moves)
 {
 	auto yield = boards{}; yield.reserve(24);
 	auto piece = brd[index];
@@ -246,8 +246,8 @@ boards piece_moves(board brd, int index, const moves &moves)
  	{
 		promote = "QRBN";
 	}
-	auto cx = index % 8;
-	auto cy = index / 8;
+	auto cx = int(index % 8);
+	auto cy = int(index / 8);
 	for (auto &move : moves)
  	{
 		auto dx = move.dx;
@@ -332,18 +332,18 @@ boards piece_moves(board brd, int index, const moves &moves)
 }
 	
 //generate all first hit pieces from index position along given vectors
-std::string piece_scans(const board &brd, unsigned int index, const vectors &vectors)
+auto piece_scans(const board &brd, unsigned int index, const vectors &vectors)
 {
 	auto yield = std::string{}; yield.reserve(8);
-	auto cx = index % 8;
-	auto cy = index / 8;
+	auto cx = int(index % 8);
+	auto cy = int(index / 8);
 	for (auto &vector : vectors)
  	{
 		auto dx = vector.dx;
 		auto dy = vector.dy;
 		auto length = vector.length;
-		int x = cx;
-		int y = cy;
+		auto x = cx;
+		auto y = cy;
 		while (length > 0)
 		{
 			x += dx;
@@ -366,7 +366,7 @@ std::string piece_scans(const board &brd, unsigned int index, const vectors &vec
 }
 	
 //test if king of given colour is in check
-bool in_check(const board &brd, int colour, std::size_t &king_index)
+auto in_check(const board &brd, int colour, std::size_t &king_index)
 {
 	auto king_piece = 'K';
 	auto tests = white_tests;
@@ -383,7 +383,7 @@ bool in_check(const board &brd, int colour, std::size_t &king_index)
 	}
 	for (auto &test : tests)
  	{
-		if (test.pieces.find_first_of(piece_scans(brd, static_cast<int>(king_index), *test.vectors)) \
+		if (test.pieces.find_first_of(piece_scans(brd, static_cast<unsigned int>(king_index), *test.vectors)) \
 			!= std::string::npos) return true;
 	}
 	//not in check
@@ -391,14 +391,14 @@ bool in_check(const board &brd, int colour, std::size_t &king_index)
 }
 
 //generate all moves (boards) for the given colours turn filtering out position where king is in check
-boards all_moves(const board &brd, int colour)
+auto all_moves(const board &brd, int colour)
 {
 	//enumarate the board square by square
 	auto yield = boards{}; yield.reserve(max_chess_moves);
 	std::size_t king_index = 0;
 	auto is_black = (colour == black);
-	int len = int(brd.length());
-	for (int index = 0; index < len; ++index)
+	auto len = int(brd.length());
+	for (auto index = 0; index < len; ++index)
 	{
 		auto piece = brd[index];
 		if (piece == ' ') continue;
@@ -417,12 +417,12 @@ boards all_moves(const board &brd, int colour)
 }
 
 //evaluate (score) a board for the colour given
-int evaluate(const board &brd, int colour)
+auto evaluate(const board &brd, int colour)
 {
-	int black_score = 0;
-	int white_score = 0;
-	int len = int(brd.length());
-	for (int index = 0; index < len; ++index)
+	auto black_score = 0;
+	auto white_score = 0;
+	auto len = int(brd.length());
+	for (auto index = 0; index < len; ++index)
 	{
 		//add score for position on the board, near center, clear lines etc
 		auto piece = brd[index];
@@ -448,7 +448,7 @@ auto start_time = std::chrono::high_resolution_clock::now();
 
 //memoized scores
 int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply);
-int score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
+auto score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
 	static auto trans_table = std::unordered_map<std::string, int>{};
 	static auto trans_lru = std::list<std::string>{};
@@ -548,7 +548,7 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 }
 
 //best move for given board position for given colour
-board best_move(const board &brd, int colour, const boards &history)
+auto best_move(const board &brd, int colour, const boards &history)
 {
 	//first ply of boards
 	auto next_boards = score_boards{};
