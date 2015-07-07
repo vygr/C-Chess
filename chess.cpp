@@ -235,102 +235,6 @@ auto display_board(const board &brd)
 	std::cout << "┗━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┛\n";
 }
 
-//generate all boards for a piece index and moves possibility
-auto piece_moves(board brd, unsigned int index, const moves &moves)
-{
-	auto yield = boards{}; yield.reserve(24);
-	auto piece = brd[index];
-	auto ptype = piece_type[piece];
-	auto promote = std::string("qrbn");
-	if (ptype == white)
- 	{
-		promote = "QRBN";
-	}
-	auto cx = int(index % 8);
-	auto cy = int(index / 8);
-	for (auto &move : moves)
- 	{
-		auto dx = move.dx;
-		auto dy = move.dy;
-		auto length = move.length;
-		auto flag = move.flag;
-		auto x = cx;
-		auto y = cy;
-		//special length for pawns so we can adjust for starting 2 hop
-		if (length == 0)
-		{
-			length = 1;
-			if (piece == 'p')
-			{
-				if (y == 1)
-				{
-					length = 2;
-				}
-			}
-			else
-			{
-				if (y == 6)
-				{
-					length = 2;
-				}
-			}
-		}
-		while (length > 0)
-		{
-			x += dx;
-			y += dy;
-			length -= 1;
-			if ((x < 0) || (x >= 8) || (y < 0) || (y >= 8))
-			{
-				//gone off the board
-				break;
-			}
-			auto newindex = y*8 + x;
-			auto newpiece = brd[newindex];
-			auto newtype = piece_type[newpiece];
-			if (newtype == ptype)
-			{
-				//hit one of our own piece type (black hit black etc)
-				break;
-			}
-			if ((flag == no_capture) && (newtype != empty))
-			{
-				//not suposed to capture and not empty square
-				break;
-			}
-			if ((flag == must_capture) && (newtype == empty))
-			{
-				//must capture and got empty square
-				break;
-			}
-			brd[index] = ' ';
-			if ((y == 0 || y == 7) && (piece == 'P' || piece == 'p'))
-			{
-				//try all the pawn promotion possibilities
-				for (auto &promote_piece : promote)
-				{
-					brd[newindex] = promote_piece;
-					yield.push_back(brd);
-				}
-			}
-			else
-			{
-				//generate this as a possible move
-				brd[newindex] = piece;
-				yield.push_back(brd);
-			}
-			brd[index] = piece;
-			brd[newindex] = newpiece;
-			if ((flag == may_capture) && (newtype != empty))
-			{
-				//may capture and we did so !
-				break;
-			}
-		}
-	}
-	return yield;
-}
-	
 //generate all first hit pieces from index position along given vectors
 auto piece_scans(const board &brd, unsigned int index, const vectors &vectors)
 {
@@ -390,7 +294,91 @@ auto in_check(const board &brd, int colour, std::size_t &king_index)
 	return false;
 }
 
-//generate all moves (boards) for the given colours turn filtering out position where king is in check
+//generate all boards for a piece index and moves possibility, filtering out boards where king is in check
+auto piece_moves(boards &yield, board brd, unsigned int index, int colour, const moves &moves, std::size_t &king_index)
+{
+	auto piece = brd[index];
+	auto promote = std::string("qrbn");
+	if (colour == white) promote = "QRBN";
+	auto cx = int(index % 8);
+	auto cy = int(index / 8);
+	for (auto &move : moves)
+ 	{
+		auto dx = move.dx;
+		auto dy = move.dy;
+		auto length = move.length;
+		auto flag = move.flag;
+		auto x = cx;
+		auto y = cy;
+		//special length for pawns so we can adjust for starting 2 hop
+		if (length == 0)
+		{
+			length = 1;
+			if (piece == 'p')
+			{
+				if (y == 1) length = 2;
+			}
+			else
+			{
+				if (y == 6) length = 2;
+			}
+		}
+		while (length > 0)
+		{
+			x += dx;
+			y += dy;
+			length -= 1;
+			if ((x < 0) || (x >= 8) || (y < 0) || (y >= 8))
+			{
+				//gone off the board
+				break;
+			}
+			auto newindex = y*8 + x;
+			auto newpiece = brd[newindex];
+			auto newtype = piece_type[newpiece];
+			if (newtype == colour)
+			{
+				//hit one of our own piece type (black hit black etc)
+				break;
+			}
+			if ((flag == no_capture) && (newtype != empty))
+			{
+				//not suposed to capture and not empty square
+				break;
+			}
+			if ((flag == must_capture) && (newtype == empty))
+			{
+				//must capture and got empty square
+				break;
+			}
+			brd[index] = ' ';
+			if ((y == 0 || y == 7) && (piece == 'P' || piece == 'p'))
+			{
+				//try all the pawn promotion possibilities
+				for (auto &promote_piece : promote)
+				{
+					brd[newindex] = promote_piece;
+					if (!in_check(brd, colour, king_index)) yield.push_back(brd);
+				}
+			}
+			else
+			{
+				//generate this as a possible move
+				brd[newindex] = piece;
+				if (!in_check(brd, colour, king_index)) yield.push_back(brd);
+			}
+			brd[index] = piece;
+			brd[newindex] = newpiece;
+			if ((flag == may_capture) && (newtype != empty))
+			{
+				//may capture and we did so !
+				break;
+			}
+		}
+	}
+}
+	
+//generate all moves (boards) for the given colours turn
 auto all_moves(const board &brd, int colour)
 {
 	//enumarate the board square by square
@@ -404,14 +392,7 @@ auto all_moves(const board &brd, int colour)
 		if (piece == ' ') continue;
 		if (piece > 'Z' != is_black) continue;
 		//one of our pieces ! so gather all boards from possible moves of this piece
-		for (auto &new_brd : piece_moves(brd, index, moves_map[piece]))
-		{
-			if (!in_check(new_brd, colour, king_index))
-			{
-				//on this board king is not in check
-				yield.push_back(new_brd);
-			}
-		}
+		piece_moves(yield, brd, index, colour, moves_map[piece], king_index);
 	}
 	return yield;
 }
@@ -520,10 +501,7 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 				//fail hard beta cutoff
 				return beta;
 			}
-			if (value > alpha)
-			{
-				alpha = value;
-			}
+			if (value > alpha) alpha = value;
 			auto end_time = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> elapsed = end_time - start_time;
 			if (elapsed.count() >= max_time_per_move)
@@ -533,18 +511,15 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 			}
 		}
 	}
-	if (mate)
- 	{
-		std::size_t king_index = 0;
-		if (in_check(sbrd.brd, colour, king_index))
-		{
-			//check mate
-			return -mate_value - ply;
-		}
-		//stale mate
-		return mate_value;
+	if (!mate) return alpha;
+	std::size_t king_index = 0;
+	if (in_check(sbrd.brd, colour, king_index))
+	{
+		//check mate
+		return -mate_value - ply;
 	}
-	return alpha;
+	//stale mate
+	return mate_value;
 }
 
 //best move for given board position for given colour
@@ -559,14 +534,8 @@ auto best_move(const board &brd, int colour, const boards &history)
 		next_boards.push_back(score_board{evaluate(brd, colour),
 			static_cast<int>(-(rep * queen_value)), brd});
 	}
-	if (next_boards.size() == 0)
-	{
-		return std::string("");
-	}
-	if (next_boards.size() == 1)
-	{
-		return next_boards[0].brd;
-	}
+	if (next_boards.size() == 0) return std::string("");
+	if (next_boards.size() == 1) return next_boards[0].brd;
 	std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
 	{
 		return brd1.score > brd2.score;
