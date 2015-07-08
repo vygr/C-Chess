@@ -9,7 +9,7 @@
 #include <chrono>
 
 //control paramaters
-const int max_ply             = 10;
+const int max_ply             = 20;
 const float max_time_per_move = 10;
 const int max_chess_moves     = 218 / 2;
 const int max_score_entries   = 100000;
@@ -248,11 +248,10 @@ auto piece_scans(const board &brd, unsigned int index, const vectors &vectors)
 		auto length = vector.length;
 		auto x = cx;
 		auto y = cy;
-		while (length > 0)
+		for (;length > 0; --length)
 		{
 			x += dx;
 			y += dy;
-			length -= 1;
 			if ((0 <= x) && (x < 8) && (0 <= y) && (y < 8))
 			{
 				//still on the board
@@ -268,7 +267,7 @@ auto piece_scans(const board &brd, unsigned int index, const vectors &vectors)
 	}
 	return yield;
 }
-	
+
 //test if king of given colour is in check
 auto in_check(const board &brd, int colour, std::size_t &king_index)
 {
@@ -294,8 +293,35 @@ auto in_check(const board &brd, int colour, std::size_t &king_index)
 	return false;
 }
 
+//evaluate (score) a board for the colour given
+auto evaluate(const board &brd, int colour)
+{
+	auto black_score = 0;
+	auto white_score = 0;
+	auto len = int(brd.length());
+	for (auto index = 0; index < len; ++index)
+	{
+		//add score for position on the board, near center, clear lines etc
+		auto piece = brd[index];
+		if (piece == ' ') continue;
+		if (piece > 'Z')
+		{
+			black_score += piece_positions[piece][63-index];
+		}
+		else
+		{
+			white_score += piece_positions[piece][index];
+		}
+		//add score for piece type, queen, rook etc
+		auto values = piece_values[piece];
+		black_score += values.first;
+		white_score += values.second;
+	}
+	return (white_score - black_score) * colour;
+}
+
 //generate all boards for a piece index and moves possibility, filtering out boards where king is in check
-auto piece_moves(boards &yield, board brd, unsigned int index, int colour, const moves &moves, std::size_t &king_index)
+auto piece_moves(score_boards &yield, board brd, unsigned int index, int colour, const moves &moves, std::size_t &king_index)
 {
 	auto piece = brd[index];
 	auto promote = std::string("qrbn");
@@ -323,11 +349,10 @@ auto piece_moves(boards &yield, board brd, unsigned int index, int colour, const
 				if (y == 6) length = 2;
 			}
 		}
-		while (length > 0)
+		for (;length > 0; --length)
 		{
 			x += dx;
 			y += dy;
-			length -= 1;
 			if ((x < 0) || (x >= 8) || (y < 0) || (y >= 8))
 			{
 				//gone off the board
@@ -358,14 +383,14 @@ auto piece_moves(boards &yield, board brd, unsigned int index, int colour, const
 				for (auto &promote_piece : promote)
 				{
 					brd[newindex] = promote_piece;
-					if (!in_check(brd, colour, king_index)) yield.push_back(brd);
+					if (!in_check(brd, colour, king_index)) yield.push_back(score_board{evaluate(brd, colour), 0, brd});
 				}
 			}
 			else
 			{
 				//generate this as a possible move
 				brd[newindex] = piece;
-				if (!in_check(brd, colour, king_index)) yield.push_back(brd);
+				if (!in_check(brd, colour, king_index)) yield.push_back(score_board{evaluate(brd, colour), 0, brd});
 			}
 			brd[index] = piece;
 			brd[newindex] = newpiece;
@@ -377,12 +402,12 @@ auto piece_moves(boards &yield, board brd, unsigned int index, int colour, const
 		}
 	}
 }
-	
+
 //generate all moves (boards) for the given colours turn
 auto all_moves(const board &brd, int colour)
 {
 	//enumarate the board square by square
-	auto yield = boards{}; yield.reserve(max_chess_moves);
+	auto yield = score_boards{}; yield.reserve(max_chess_moves);
 	std::size_t king_index = 0;
 	auto is_black = (colour == black);
 	auto len = int(brd.length());
@@ -395,33 +420,6 @@ auto all_moves(const board &brd, int colour)
 		piece_moves(yield, brd, index, colour, moves_map[piece], king_index);
 	}
 	return yield;
-}
-
-//evaluate (score) a board for the colour given
-auto evaluate(const board &brd, int colour)
-{
-	auto black_score = 0;
-	auto white_score = 0;
-	auto len = int(brd.length());
-	for (auto index = 0; index < len; ++index)
-	{
-		//add score for position on the board, near center, clear lines etc
-		auto piece = brd[index];
-		if (piece == ' ') continue;
-		if (piece > 'Z')
-		{
-			black_score += piece_positions[piece][63-index];
-		}
-		else
-		{
-			white_score += piece_positions[piece][index];
-		}
-		//add score for piece type, queen, rook etc
-		auto values = piece_values[piece];
-		black_score += values.first;
-		white_score += values.second;
-	}
-	return (white_score - black_score) * colour;
 }
 
 //start of move time
@@ -457,12 +455,7 @@ auto score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 {
 	if (ply == 0) return -sbrd.score;
-	auto next_boards = score_boards{};
-	next_boards.reserve(max_chess_moves);
-	for (auto &brd : all_moves(sbrd.brd, colour))
-	{
-		next_boards.push_back(score_board{evaluate(brd, colour), 0, brd});
-	}
+	auto next_boards = all_moves(sbrd.brd, colour);
 	auto mate = true;
 	if (next_boards.size() != 0)
 	{
@@ -526,13 +519,11 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 auto best_move(const board &brd, int colour, const boards &history)
 {
 	//first ply of boards
-	auto next_boards = score_boards{};
-	next_boards.reserve(max_chess_moves);
-	for (auto &brd : all_moves(brd, colour))
+	auto next_boards = all_moves(brd, colour);
+	for (auto &sbrd : next_boards)
 	{
-		auto rep = std::count(begin(history), end(history), brd);
-		next_boards.push_back(score_board{evaluate(brd, colour),
-			static_cast<int>(-(rep * queen_value)), brd});
+		auto rep = std::count(begin(history), end(history), sbrd.brd);
+		sbrd.bias = static_cast<int>(-(rep * queen_value));
 	}
 	if (next_boards.size() == 0) return std::string("");
 	if (next_boards.size() == 1) return next_boards[0].brd;
@@ -540,7 +531,7 @@ auto best_move(const board &brd, int colour, const boards &history)
 	{
 		return brd1.score > brd2.score;
 	});
-	
+
 	//start move timer
 	start_time = std::chrono::high_resolution_clock::now();
 	for (auto ply = 1; ply <= max_ply; ++ply)
