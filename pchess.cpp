@@ -75,138 +75,138 @@ struct test
 typedef std::vector<test> tests;
 
 //map board square contents to piece type/colour
-auto piece_type = std::map<char, int>{ \
-	{'p', black}, {'r', black}, {'n', black}, {'b', black}, {'k', black}, {'q', black}, \
-	{'P', white}, {'R', white}, {'N', white}, {'B', white}, {'K', white}, {'Q', white}, \
+auto piece_type = std::map<char, int>{
+	{'p', black}, {'r', black}, {'n', black}, {'b', black}, {'k', black}, {'q', black},
+	{'P', white}, {'R', white}, {'N', white}, {'B', white}, {'K', white}, {'Q', white},
 	{' ', empty}};
 
-auto unicode_pieces = std::map<char, std::string>{ \
-	{'p', "♟"}, {'r', "♜"}, {'n', "♞"}, {'b', "♝"}, {'k', "♚"}, {'q', "♛"}, \
-	{'P', "♙"}, {'R', "♖"}, {'N', "♘"}, {'B', "♗"}, {'K', "♔"}, {'Q', "♕"}, \
+auto unicode_pieces = std::map<char, std::string>{
+	{'p', "♟"}, {'r', "♜"}, {'n', "♞"}, {'b', "♝"}, {'k', "♚"}, {'q', "♛"},
+	{'P', "♙"}, {'R', "♖"}, {'N', "♘"}, {'B', "♗"}, {'K', "♔"}, {'Q', "♕"},
 	{' ', " "}};
 
 //piece move vectors and capture actions
-auto black_pawn_moves = moves{ \
+auto black_pawn_moves = moves{
 	{0, 1, 0, no_capture}, {-1, 1, 1, must_capture}, {1, 1, 1, must_capture}};
-auto white_pawn_moves = moves{ \
+auto white_pawn_moves = moves{
 	{0, -1, 0, no_capture}, {-1, -1, 1, must_capture}, {1, -1, 1, must_capture}};
-auto rook_moves = moves{ \
+auto rook_moves = moves{
 	{0, -1, 7, may_capture}, {-1, 0, 7, may_capture}, {0, 1, 7, may_capture}, {1, 0, 7, may_capture}};
-auto bishop_moves = moves{ \
+auto bishop_moves = moves{
 	{-1, -1, 7, may_capture}, {1, 1, 7, may_capture}, {-1, 1, 7, may_capture}, {1, -1, 7, may_capture}};
-auto knight_moves = moves{ \
-	{-2, 1, 1, may_capture}, {2, -1, 1, may_capture}, {2, 1, 1, may_capture}, {-2, -1, 1, may_capture}, \
+auto knight_moves = moves{
+	{-2, 1, 1, may_capture}, {2, -1, 1, may_capture}, {2, 1, 1, may_capture}, {-2, -1, 1, may_capture},
 	{-1, -2, 1, may_capture}, {-1, 2, 1, may_capture}, {1, -2, 1, may_capture}, {1, 2, 1, may_capture}};
-auto queen_moves = moves{ \
-	{0, -1, 7, may_capture}, {-1, 0, 7, may_capture}, {0, 1, 7, may_capture}, {1, 0, 7, may_capture}, \
+auto queen_moves = moves{
+	{0, -1, 7, may_capture}, {-1, 0, 7, may_capture}, {0, 1, 7, may_capture}, {1, 0, 7, may_capture},
 	{-1, -1, 7, may_capture}, {1, 1, 7, may_capture}, {-1, 1, 7, may_capture}, {1, -1, 7, may_capture}};
-auto king_moves = moves{ \
-	{0, -1, 1, may_capture}, {-1, 0, 1, may_capture}, {0, 1, 1, may_capture}, {1, 0, 1, may_capture}, \
+auto king_moves = moves{
+	{0, -1, 1, may_capture}, {-1, 0, 1, may_capture}, {0, 1, 1, may_capture}, {1, 0, 1, may_capture},
 	{-1, -1, 1, may_capture}, {1, 1, 1, may_capture}, {-1, 1, 1, may_capture}, {1, -1, 1, may_capture}};
 
 //map piece to its movement possibilities
-auto moves_map = std::map<char, moves &>{ \
-	{'p', black_pawn_moves}, {'P', white_pawn_moves}, {'R', rook_moves}, {'r', rook_moves}, {'B', bishop_moves}, {'b', bishop_moves}, \
+auto moves_map = std::map<char, moves &>{
+	{'p', black_pawn_moves}, {'P', white_pawn_moves}, {'R', rook_moves}, {'r', rook_moves}, {'B', bishop_moves}, {'b', bishop_moves},
 	{'N', knight_moves}, {'n', knight_moves}, {'Q', queen_moves}, {'q', queen_moves}, {'K', king_moves}, {'k', king_moves}};
 
 //piece check vectors, king is tested for being on these vectors for check tests
-auto black_pawn_vectors = vectors{ \
+auto black_pawn_vectors = vectors{
 	{-1, 1, 1}, {1, 1, 1}};
-auto white_pawn_vectors = vectors{ \
+auto white_pawn_vectors = vectors{
 	{-1, -1, 1}, {1, -1, 1}};
-auto bishop_vectors = vectors{ \
+auto bishop_vectors = vectors{
 	{-1, -1, 7}, {1, 1, 7}, {-1, 1, 7}, {1, -1, 7}};
-auto rook_vectors = vectors{ \
+auto rook_vectors = vectors{
 	{0, -1, 7}, {-1, 0, 7}, {0, 1, 7}, {1, 0, 7}};
-auto knight_vectors = vectors{ \
+auto knight_vectors = vectors{
 	{-1, -2, 1}, {-1, 2, 1}, {-2, -1, 1}, {-2, 1, 1}, {1, -2, 1}, {1, 2, 1}, {2, -1, 1}, {2, 1, 1}};
-auto queen_vectors = vectors{ \
+auto queen_vectors = vectors{
 	{-1, -1, 7}, {1, 1, 7}, {-1, 1, 7}, {1, -1, 7}, {0, -1, 7}, {-1, 0, 7}, {0, 1, 7}, {1, 0, 7}};
-auto king_vectors = vectors{ \
+auto king_vectors = vectors{
 	{-1, -1, 1}, {1, 1, 1}, {-1, 1, 1}, {1, -1, 1}, {0, -1, 1}, {-1, 0, 1}, {0, 1, 1}, {1, 0, 1}};
 
 //check tests, piece types given can not be on the vectors given
-auto white_tests = tests{ \
+auto white_tests = tests{
 	{"qb", &bishop_vectors}, {"qr", &rook_vectors}, {"n", &knight_vectors}, {"k", &king_vectors}, {"p", &white_pawn_vectors}};
-auto black_tests = tests{ \
+auto black_tests = tests{
 	{"QB", &bishop_vectors}, {"QR", &rook_vectors}, {"N", &knight_vectors}, {"K", &king_vectors}, {"P", &black_pawn_vectors}};
 
 //map piece to black/white scores for board evaluation
-auto piece_values = std::map<char, std::pair<int, int>>{ \
-	{'k', {king_value, 0}}, {'K', {0, king_value}}, {'q', {queen_value, 0}}, {'Q', {0, queen_value}}, \
-	{'r', {rook_value, 0}}, {'R', {0, rook_value}}, {'b', {bishop_value, 0}}, {'B', {0, bishop_value}}, \
+auto piece_values = std::map<char, std::pair<int, int>>{
+	{'k', {king_value, 0}}, {'K', {0, king_value}}, {'q', {queen_value, 0}}, {'Q', {0, queen_value}},
+	{'r', {rook_value, 0}}, {'R', {0, rook_value}}, {'b', {bishop_value, 0}}, {'B', {0, bishop_value}},
 	{'n', {knight_value, 0}}, {'N', {0, knight_value}}, {'p', {pawn_value, 0}}, {'P', {0, pawn_value}}};
 
 //pawn values for position in board evaluation
-auto pawn_position_values = std::array<int, 64>{ \
-	0, 0, 0, 0, 0, 0, 0, 0, \
-	50, 50, 50, 50, 50, 50, 50, 50, \
-	10, 10, 20, 30, 30, 20, 10, 10, \
-	5, 5, 10, 25, 25, 10, 5, 5, \
-	0, 0, 0, 20, 20, 0, 0, 0, \
-	5, -5, -10, 0, 0, -10, -5, 5, \
-	5, 10, 10, -20, -20, 10, 10, 5, \
+auto pawn_position_values = std::array<int, 64>{
+	0, 0, 0, 0, 0, 0, 0, 0,
+	50, 50, 50, 50, 50, 50, 50, 50,
+	10, 10, 20, 30, 30, 20, 10, 10,
+	5, 5, 10, 25, 25, 10, 5, 5,
+	0, 0, 0, 20, 20, 0, 0, 0,
+	5, -5, -10, 0, 0, -10, -5, 5,
+	5, 10, 10, -20, -20, 10, 10, 5,
 	0, 0, 0, 0, 0, 0, 0, 0};
 
 //knight values for position in board evaluation
-auto knight_position_values = std::array<int, 64>{ \
-	-50, -40, -30, -30, -30, -30, -40, -50, \
-	-40, -20, 0, 0, 0, 0, -20, -40, \
-	-30, 0, 10, 15, 15, 10, 0, -30, \
-	-30, 5, 15, 20, 20, 15, 5, -30, \
-	-30, 0, 15, 20, 20, 15, 0, -30, \
-	-30, 5, 10, 15, 15, 10, 5, -30, \
-	-40, -20, 0, 5, 5, 0, -20, -40, \
+auto knight_position_values = std::array<int, 64>{
+	-50, -40, -30, -30, -30, -30, -40, -50,
+	-40, -20, 0, 0, 0, 0, -20, -40,
+	-30, 0, 10, 15, 15, 10, 0, -30,
+	-30, 5, 15, 20, 20, 15, 5, -30,
+	-30, 0, 15, 20, 20, 15, 0, -30,
+	-30, 5, 10, 15, 15, 10, 5, -30,
+	-40, -20, 0, 5, 5, 0, -20, -40,
 	-50, -40, -30, -30, -30, -30, -40, -50};
 
 //bishop values for position in board evaluation
-auto bishop_position_values = std::array<int, 64>{ \
-	-20, -10, -10, -10, -10, -10, -10, -20, \
-	-10, 0, 0, 0, 0, 0, 0, -10, \
-	-10, 0, 5, 10, 10, 5, 0, -10, \
-	-10, 5, 5, 10, 10, 5, 5, -10, \
-	-10, 0, 10, 10, 10, 10, 0, -10, \
-	-10, 10, 10, 10, 10, 10, 10, -10, \
-	-10, 5, 0, 0, 0, 0, 5, -10, \
+auto bishop_position_values = std::array<int, 64>{
+	-20, -10, -10, -10, -10, -10, -10, -20,
+	-10, 0, 0, 0, 0, 0, 0, -10,
+	-10, 0, 5, 10, 10, 5, 0, -10,
+	-10, 5, 5, 10, 10, 5, 5, -10,
+	-10, 0, 10, 10, 10, 10, 0, -10,
+	-10, 10, 10, 10, 10, 10, 10, -10,
+	-10, 5, 0, 0, 0, 0, 5, -10,
 	-20, -10, -10, -10, -10, -10, -10, -20};
 
 //rook values for position in board evaluation
-auto rook_position_values = std::array<int, 64>{ \
-	0, 0, 0, 0, 0, 0, 0, 0, \
-	5, 10, 10, 10, 10, 10, 10, 5, \
-	-5, 0, 0, 0, 0, 0, 0, -5, \
-	-5, 0, 0, 0, 0, 0, 0, -5, \
-	-5, 0, 0, 0, 0, 0, 0, -5, \
-	-5, 0, 0, 0, 0, 0, 0, -5, \
-	-5, 0, 0, 0, 0, 0, 0, -5, \
+auto rook_position_values = std::array<int, 64>{
+	0, 0, 0, 0, 0, 0, 0, 0,
+	5, 10, 10, 10, 10, 10, 10, 5,
+	-5, 0, 0, 0, 0, 0, 0, -5,
+	-5, 0, 0, 0, 0, 0, 0, -5,
+	-5, 0, 0, 0, 0, 0, 0, -5,
+	-5, 0, 0, 0, 0, 0, 0, -5,
+	-5, 0, 0, 0, 0, 0, 0, -5,
 	0, 0, 0, 5, 5, 0, 0, 0};
 
 //queen values for position in board evaluation
-auto queen_position_values = std::array<int, 64>{ \
-	-20, -10, -10, -5, -5, -10, -10, -20, \
-	-10, 0, 0, 0, 0, 0, 0, -10, \
-	-10, 0, 5, 5, 5, 5, 0, -10, \
-	-5, 0, 5, 5, 5, 5, 0, -5, \
-	0, 0, 5, 5, 5, 5, 0, -5, \
-	-10, 5, 5, 5, 5, 5, 0, -10, \
-	-10, 0, 5, 0, 0, 0, 0, -10, \
+auto queen_position_values = std::array<int, 64>{
+	-20, -10, -10, -5, -5, -10, -10, -20,
+	-10, 0, 0, 0, 0, 0, 0, -10,
+	-10, 0, 5, 5, 5, 5, 0, -10,
+	-5, 0, 5, 5, 5, 5, 0, -5,
+	0, 0, 5, 5, 5, 5, 0, -5,
+	-10, 5, 5, 5, 5, 5, 0, -10,
+	-10, 0, 5, 0, 0, 0, 0, -10,
 	-20, -10, -10, -5, -5, -10, -10, -20};
 
 //king values for position in board evaluation
-auto king_position_values = std::array<int, 64>{ \
-	-30, -40, -40, -50, -50, -40, -40, -30, \
-	-30, -40, -40, -50, -50, -40, -40, -30, \
-	-30, -40, -40, -50, -50, -40, -40, -30, \
-	-30, -40, -40, -50, -50, -40, -40, -30, \
-	-20, -30, -30, -40, -40, -30, -30, -20, \
-	-10, -20, -20, -20, -20, -20, -20, -10, \
-	20, 20, 0, 0, 0, 0, 20, 20, \
+auto king_position_values = std::array<int, 64>{
+	-30, -40, -40, -50, -50, -40, -40, -30,
+	-30, -40, -40, -50, -50, -40, -40, -30,
+	-30, -40, -40, -50, -50, -40, -40, -30,
+	-30, -40, -40, -50, -50, -40, -40, -30,
+	-20, -30, -30, -40, -40, -30, -30, -20,
+	-10, -20, -20, -20, -20, -20, -20, -10,
+	20, 20, 0, 0, 0, 0, 20, 20,
 	20, 30, 10, 0, 0, 10, 30, 20};
 
 //map piece to position value table
-auto piece_positions = std::map<char, std::array<int, 64>&>{ \
-	{'k', king_position_values}, {'K', king_position_values}, {'q', queen_position_values}, {'Q', queen_position_values}, \
-	{'r', rook_position_values}, {'R', rook_position_values}, {'b', bishop_position_values}, {'B', bishop_position_values}, \
+auto piece_positions = std::map<char, std::array<int, 64>&>{
+	{'k', king_position_values}, {'K', king_position_values}, {'q', queen_position_values}, {'Q', queen_position_values},
+	{'r', rook_position_values}, {'R', rook_position_values}, {'b', bishop_position_values}, {'B', bishop_position_values},
 	{'n', knight_position_values}, {'N', knight_position_values}, {'p', pawn_position_values}, {'P', pawn_position_values}};
 
 //clear screen
@@ -287,7 +287,7 @@ auto in_check(const board &brd, int colour, std::size_t &king_index)
 	}
 	for (auto &test : tests)
  	{
-		if (test.pieces.find_first_of(piece_scans(brd, static_cast<unsigned int>(king_index), *test.vectors)) \
+		if (test.pieces.find_first_of(piece_scans(brd, static_cast<unsigned int>(king_index), *test.vectors))
 			!= std::string::npos) return true;
 	}
 	//not in check
@@ -536,7 +536,7 @@ auto best_move(const board &brd, int colour, const boards &history)
 	}
 	if (next_boards.size() == 0) return std::string("");
 	if (next_boards.size() == 1) return next_boards[0].brd;
-	
+
 	//start move timer
 	start_time = std::chrono::high_resolution_clock::now();
 	for (auto ply = 1; ply <= max_ply; ++ply)
