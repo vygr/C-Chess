@@ -10,7 +10,7 @@
 
 //control paramaters
 const int max_ply             = 20;
-const float max_time_per_move = 10;
+const float max_time_per_move = 20;
 const int max_chess_moves     = 218 / 2;
 const int max_score_entries   = 100000;
 
@@ -137,7 +137,7 @@ auto piece_values = std::map<char, std::pair<int, int>>{
 	{'n', {knight_value, 0}}, {'N', {0, knight_value}}, {'p', {pawn_value, 0}}, {'P', {0, pawn_value}}};
 
 //pawn values for position in board evaluation
-auto pawn_position_values = std::array<int, 64>{
+auto pawn_position_values = std::array<int, 64>{{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	50, 50, 50, 50, 50, 50, 50, 50,
 	10, 10, 20, 30, 30, 20, 10, 10,
@@ -145,10 +145,10 @@ auto pawn_position_values = std::array<int, 64>{
 	0, 0, 0, 20, 20, 0, 0, 0,
 	5, -5, -10, 0, 0, -10, -5, 5,
 	5, 10, 10, -20, -20, 10, 10, 5,
-	0, 0, 0, 0, 0, 0, 0, 0};
+	0, 0, 0, 0, 0, 0, 0, 0}};
 
 //knight values for position in board evaluation
-auto knight_position_values = std::array<int, 64>{
+auto knight_position_values = std::array<int, 64>{{
 	-50, -40, -30, -30, -30, -30, -40, -50,
 	-40, -20, 0, 0, 0, 0, -20, -40,
 	-30, 0, 10, 15, 15, 10, 0, -30,
@@ -156,10 +156,10 @@ auto knight_position_values = std::array<int, 64>{
 	-30, 0, 15, 20, 20, 15, 0, -30,
 	-30, 5, 10, 15, 15, 10, 5, -30,
 	-40, -20, 0, 5, 5, 0, -20, -40,
-	-50, -40, -30, -30, -30, -30, -40, -50};
+	-50, -40, -30, -30, -30, -30, -40, -50}};
 
 //bishop values for position in board evaluation
-auto bishop_position_values = std::array<int, 64>{
+auto bishop_position_values = std::array<int, 64>{{
 	-20, -10, -10, -10, -10, -10, -10, -20,
 	-10, 0, 0, 0, 0, 0, 0, -10,
 	-10, 0, 5, 10, 10, 5, 0, -10,
@@ -167,10 +167,10 @@ auto bishop_position_values = std::array<int, 64>{
 	-10, 0, 10, 10, 10, 10, 0, -10,
 	-10, 10, 10, 10, 10, 10, 10, -10,
 	-10, 5, 0, 0, 0, 0, 5, -10,
-	-20, -10, -10, -10, -10, -10, -10, -20};
+	-20, -10, -10, -10, -10, -10, -10, -20}};
 
 //rook values for position in board evaluation
-auto rook_position_values = std::array<int, 64>{
+auto rook_position_values = std::array<int, 64>{{
 	0, 0, 0, 0, 0, 0, 0, 0,
 	5, 10, 10, 10, 10, 10, 10, 5,
 	-5, 0, 0, 0, 0, 0, 0, -5,
@@ -178,10 +178,10 @@ auto rook_position_values = std::array<int, 64>{
 	-5, 0, 0, 0, 0, 0, 0, -5,
 	-5, 0, 0, 0, 0, 0, 0, -5,
 	-5, 0, 0, 0, 0, 0, 0, -5,
-	0, 0, 0, 5, 5, 0, 0, 0};
+	0, 0, 0, 5, 5, 0, 0, 0}};
 
 //queen values for position in board evaluation
-auto queen_position_values = std::array<int, 64>{
+auto queen_position_values = std::array<int, 64>{{
 	-20, -10, -10, -5, -5, -10, -10, -20,
 	-10, 0, 0, 0, 0, 0, 0, -10,
 	-10, 0, 5, 5, 5, 5, 0, -10,
@@ -189,10 +189,10 @@ auto queen_position_values = std::array<int, 64>{
 	0, 0, 5, 5, 5, 5, 0, -5,
 	-10, 5, 5, 5, 5, 5, 0, -10,
 	-10, 0, 5, 0, 0, 0, 0, -10,
-	-20, -10, -10, -5, -5, -10, -10, -20};
+	-20, -10, -10, -5, -5, -10, -10, -20}};
 
 //king values for position in board evaluation
-auto king_position_values = std::array<int, 64>{
+auto king_position_values = std::array<int, 64>{{
 	-30, -40, -40, -50, -50, -40, -40, -30,
 	-30, -40, -40, -50, -50, -40, -40, -30,
 	-30, -40, -40, -50, -50, -40, -40, -30,
@@ -200,7 +200,7 @@ auto king_position_values = std::array<int, 64>{
 	-20, -30, -30, -40, -40, -30, -30, -20,
 	-10, -20, -20, -20, -20, -20, -20, -10,
 	20, 20, 0, 0, 0, 0, 20, 20,
-	20, 30, 10, 0, 0, 10, 30, 20};
+	20, 30, 10, 0, 0, 10, 30, 20}};
 
 //map piece to position value table
 auto piece_positions = std::map<char, std::array<int, 64>&>{
@@ -541,7 +541,7 @@ auto best_move(const board &brd, int colour, const boards &history)
 		auto best_index = 0;
 		auto alpha = -mate_value*10;
 		auto beta = mate_value*10;
-		for (auto index = 0; index < next_boards.size(); ++index)
+		for (auto index = 0; index < static_cast<int>(next_boards.size()); ++index)
 		{
 			auto score_board = &next_boards[index];
 			score_board->score = -score(*score_board, -colour, -beta, -alpha, ply);
@@ -582,7 +582,7 @@ auto best_move(const board &brd, int colour, const boards &history)
 	return next_boards[0].brd;
 }
 
-int main(int argc, const char * argv[])
+int main(int, const char *[])
 {
 	//setup first board, loop for white..black..white..black...
 	auto game_start_time = std::chrono::high_resolution_clock::now();
