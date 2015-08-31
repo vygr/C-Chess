@@ -23,6 +23,7 @@ const int bishop_value = 330;
 const int knight_value = 320;
 const int pawn_value   = 100;
 const int mate_value   = king_value * 10;
+const int timeout_value = mate_value * 2;
 
 //board square/piece types
 const int white = 1;
@@ -442,6 +443,7 @@ auto score(const score_board &sbrd, int colour, int alpha, int beta, int ply)
 	auto search = trans_table.find(key);
 	if (search != end(trans_table)) return search->second;
 	auto score = score_impl(sbrd, colour, alpha, beta, ply);
+	if (score == timeout_value || score == -timeout_value) return score;
 	trans_table[key] = score;
 	trans_lru.push_back(key);
 	if (trans_lru.size() > max_score_entries)
@@ -485,6 +487,11 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 				value = -score(score_board, -colour, -beta, -alpha, ply-1);
 			}
 			mate = false;
+			if (value == timeout_value || value == -timeout_value)
+			{
+				//move time out
+				return value;
+			}
 			if (value >= mate_value)
 			{
 				//early return if mate
@@ -501,7 +508,7 @@ int score_impl(const score_board &sbrd, int colour, int alpha, int beta, int ply
 			if (elapsed.count() >= max_time_per_move)
 			{
 				//time has expired for this move
-				break;
+				return timeout_value;
 			}
 		}
 	}
@@ -556,6 +563,12 @@ auto best_move(const board &brd, int colour, const boards &history)
 		{
 			auto score_board = &next_boards[index];
 			score_board->score = -futures[index].get();
+			if (score_board->score == timeout_value || score_board->score == -timeout_value)
+			{
+				//move time out
+				for (++index; index < next_boards.size(); ++index) futures[index].get();
+				return next_boards[0].brd;
+			}
 			score_board->score += score_board->bias;
 			if (score_board->score > best_score)
 			{
@@ -568,13 +581,6 @@ auto best_move(const board &brd, int colour, const boards &history)
 				//just tick off another board
 				std::cout << "." << std::flush;
 			}
-		}
-		auto end_time = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<float> elapsed = end_time - start_time;
-		if (elapsed.count() >= max_time_per_move)
-		{
-			//move timer expired
-			break;
 		}
 		std::sort(begin(next_boards), end(next_boards), [&] (const auto &brd1, const auto &brd2)
 		{
