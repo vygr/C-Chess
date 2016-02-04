@@ -10,4 +10,3 @@ clang++ -O3 -std=c++14 chess.cpp -o chess
 Run with:
 
 ./chess
-./pchess
